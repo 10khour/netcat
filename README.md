@@ -1,2 +1,2 @@
-# gonc
+# netcat
 Netcat write in go
