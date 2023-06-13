@@ -115,7 +115,7 @@ type RateWriter struct {
 }
 
 func (rate *RateWriter) String() string {
-	// 300ms 以上才计算一次速度
+	// 800ms 以上才计算一次速度
 	if rate.speed == "" || (rate.endTime.Sub(rate.startTime) > time.Duration(time.Millisecond)*800) {
 		speed := math.Round(float64(rate.count) / rate.endTime.Sub(rate.startTime).Seconds())
 		rate.speed = humanize.Bytes(uint64(speed)) + "/S "
