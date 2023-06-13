@@ -1,5 +1,6 @@
 # netcat
-Netcat write in go , display network progress .
+A more friendly and simple netcat, implemented using golang。
+
 
 Send file
 ```
