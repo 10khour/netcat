@@ -30,6 +30,7 @@ func init() {
 func bind(port int) (net.Listener, error) {
 	return net.Listen("tcp", fmt.Sprintf(":%d", bindPort))
 }
+
 func main() {
 	if bindPort != 0 {
 		listener, err := bind(bindPort)
@@ -81,6 +82,7 @@ func handleInput(conn net.Conn) {
 		fmt.Fprintf(os.Stderr, "\r%s", rate)
 	}
 }
+
 func handleTcp(conn net.Conn) {
 	var buf = make([]byte, 2048)
 	var rate = new(RateWriter)
@@ -116,9 +118,10 @@ type RateWriter struct {
 
 func (rate RateWriter) String() string {
 	speed := math.Round(float64(rate.count) / rate.endTime.Sub(rate.startTime).Seconds())
-	return humanize.Bytes(uint64(rate.count)) + " " + "[ " + humanize.Bytes(uint64(speed)) + "/s ]"
+	return humanize.Bytes(uint64(rate.count)) + " " + "[ " + humanize.Bytes(uint64(speed)) + "/S ]"
 
 }
+
 func (rate *RateWriter) Write(buf []byte) (int, error) {
 	if rate.startTime.IsZero() {
 		rate.startTime = time.Now()
