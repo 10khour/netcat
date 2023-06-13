@@ -75,8 +75,7 @@ func handleInput(conn net.Conn) {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
 		}
-		rate.count = rate.count + int64(len(buffer))
-		rate.endTime = time.Now()
+
 		fmt.Fprintf(os.Stderr, "\r%s", strings.Repeat(" ", 80))
 
 		fmt.Fprintf(os.Stderr, "\r%s", rate)
@@ -104,22 +103,25 @@ func handleTcp(conn net.Conn) {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
 		}
-		rate.count = rate.count + int64(len(buf))
-		rate.endTime = time.Now()
 		fmt.Fprintf(os.Stderr, "\r%s", rate)
 	}
 }
 
 type RateWriter struct {
+	speed     string
 	startTime time.Time
 	endTime   time.Time
 	count     int64
 }
 
-func (rate RateWriter) String() string {
-	speed := math.Round(float64(rate.count) / rate.endTime.Sub(rate.startTime).Seconds())
-	return humanize.Bytes(uint64(rate.count)) + " " + "[ " + humanize.Bytes(uint64(speed)) + "/S ]"
-
+func (rate *RateWriter) String() string {
+	// 300ms 以上才计算一次速度
+	if rate.speed == "" || (rate.endTime.Sub(rate.startTime) > time.Duration(time.Millisecond)*800) {
+		speed := math.Round(float64(rate.count) / rate.endTime.Sub(rate.startTime).Seconds())
+		rate.speed = humanize.Bytes(uint64(speed)) + "/S "
+		return "Count: " + humanize.Bytes(uint64(rate.count)) + " Speed: " + rate.speed
+	}
+	return "Count: " + humanize.Bytes(uint64(rate.count)) + " Speed: " + rate.speed
 }
 
 func (rate *RateWriter) Write(buf []byte) (int, error) {
