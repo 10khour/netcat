@@ -21,7 +21,7 @@ var (
 
 func init() {
 	flag.StringVar(&host, "host", "", "remote host")
-	flag.IntVar(&port, "int", 0, "remote port")
+	flag.IntVar(&port, "port", 0, "remote port")
 	flag.IntVar(&bindPort, "l", 0, "bind port")
 	flag.Parse()
 
