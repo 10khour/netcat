@@ -1,6 +1,9 @@
 # netcat
 A more friendly and simple netcat, implemented using golang。
 
+```bash
+go install github.com/10khour/netcat@latest
+```
 
 Send file
 ```
