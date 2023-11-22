@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	humanize "github.com/dustin/go-humanize"
@@ -55,56 +56,120 @@ func main() {
 }
 
 func handleInput(conn net.Conn) {
-	var buffer = make([]byte, 2048)
+	var buffer = make([]byte, 40960)
 	var rate = new(RateWriter)
 	writer := io.MultiWriter(conn, rate)
-	for {
-		n, err := os.Stdin.Read(buffer)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Fprint(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		if n == 0 {
-			break
-		}
-		_, err = writer.Write(buffer[:n])
-		if err != nil {
-			fmt.Fprint(os.Stderr, err.Error())
-			os.Exit(1)
-		}
+	wait := sync.WaitGroup{}
+	wait.Add(1)
+	go func() {
 
-		fmt.Fprintf(os.Stderr, "\r%s", strings.Repeat(" ", 80))
+		for {
+			n, err := os.Stdin.Read(buffer)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			if n == 0 {
+				break
+			}
+			_, err = writer.Write(buffer[:n])
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
 
-		fmt.Fprintf(os.Stderr, "\r%s", rate)
-	}
+			fmt.Fprintf(os.Stderr, "\r%s", strings.Repeat(" ", 80))
+
+			fmt.Fprintf(os.Stderr, "\r%s", rate)
+		}
+		wait.Done()
+	}()
+	writer1 := io.MultiWriter(os.Stdout, rate)
+
+	go func() {
+		for {
+			n, err := conn.Read(buffer)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			if n == 0 {
+				break
+			}
+			_, err = writer1.Write(buffer[:n])
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+
+			fmt.Fprintf(os.Stderr, "\r%s", strings.Repeat(" ", 80))
+
+			fmt.Fprintf(os.Stderr, "\r%s", rate)
+		}
+		wait.Done()
+	}()
+	wait.Wait()
 }
 
 func handleTcp(conn net.Conn) {
-	var buf = make([]byte, 2048)
+	var buf = make([]byte, 40960)
 	var rate = new(RateWriter)
 	writer := io.MultiWriter(os.Stdout, rate)
-	for {
-		n, err := conn.Read(buf)
-		if err == io.EOF {
-			break
+	wait := sync.WaitGroup{}
+	wait.Add(1)
+	go func() {
+		for {
+			n, err := conn.Read(buf)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			if n == 0 {
+				break
+			}
+			_, err = writer.Write(buf[:n])
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			fmt.Fprintf(os.Stderr, "\r%s", rate)
 		}
-		if err != nil {
-			fmt.Fprint(os.Stderr, err.Error())
-			os.Exit(1)
+		wait.Done()
+	}()
+
+	writer1 := io.MultiWriter(conn, rate)
+	go func() {
+		for {
+			n, err := os.Stdin.Read(buf)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			if n == 0 {
+				break
+			}
+			_, err = writer1.Write(buf[:n])
+			if err != nil {
+				fmt.Fprint(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			fmt.Fprintf(os.Stderr, "\r%s", rate)
 		}
-		if n == 0 {
-			break
-		}
-		_, err = writer.Write(buf[:n])
-		if err != nil {
-			fmt.Fprint(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		fmt.Fprintf(os.Stderr, "\r%s", rate)
-	}
+		wait.Done()
+	}()
+	wait.Wait()
 }
 
 type RateWriter struct {
