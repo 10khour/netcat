@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	host     string
-	port     int
-	bindPort int
+	host       string
+	port       int
+	bindPort   int
+	bufferSize int = 1024 * 64
 )
 
 func init() {
@@ -56,13 +57,13 @@ func main() {
 }
 
 func handleInput(conn net.Conn) {
-	var buffer = make([]byte, 40960)
 	var rate = new(RateWriter)
 	writer := io.MultiWriter(conn, rate)
 	wait := sync.WaitGroup{}
 	wait.Add(1)
 	go func() {
 
+		var buffer = make([]byte, bufferSize)
 		for {
 			n, err := os.Stdin.Read(buffer)
 			if err == io.EOF {
@@ -90,6 +91,7 @@ func handleInput(conn net.Conn) {
 	writer1 := io.MultiWriter(os.Stdout, rate)
 
 	go func() {
+		var buffer = make([]byte, bufferSize)
 		for {
 			n, err := conn.Read(buffer)
 			if err == io.EOF {
@@ -118,12 +120,12 @@ func handleInput(conn net.Conn) {
 }
 
 func handleTcp(conn net.Conn) {
-	var buf = make([]byte, 40960)
 	var rate = new(RateWriter)
 	writer := io.MultiWriter(os.Stdout, rate)
 	wait := sync.WaitGroup{}
 	wait.Add(1)
 	go func() {
+		var buf = make([]byte, bufferSize)
 		for {
 			n, err := conn.Read(buf)
 			if err == io.EOF {
@@ -148,6 +150,7 @@ func handleTcp(conn net.Conn) {
 
 	writer1 := io.MultiWriter(conn, rate)
 	go func() {
+		var buf = make([]byte, bufferSize)
 		for {
 			n, err := os.Stdin.Read(buf)
 			if err == io.EOF {
